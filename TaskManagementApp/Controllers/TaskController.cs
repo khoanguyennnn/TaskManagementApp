@@ -15,11 +15,11 @@ namespace TaskManagementApp.Controllers
     public class TaskController : ControllerBase
     {
         private readonly ITaskRepository _taskRepo;
-        private readonly IUserRepository _userRepo;
-        public TaskController(ITaskRepository taskRepo, IUserRepository userRepo)
+        //private readonly IUserRepository _userRepo;
+        public TaskController(ITaskRepository taskRepo)
         {
             _taskRepo = taskRepo;
-            _userRepo = userRepo;
+            //_userRepo = userRepo;
         }
 
         [HttpGet]
@@ -30,18 +30,18 @@ namespace TaskManagementApp.Controllers
             return Ok(taskDto);
         }
 
-        [HttpGet("user/{userId:int}")]
-        public async Task<IActionResult> GetAllTasksByUserId([FromRoute] int userId,[FromQuery] QueryObject query)
-        {
-            var tasks = await _taskRepo.GetAllByUserIdAsync(query, userId);
-            var taskDto = tasks.Select(s => s.ToTaskDto());
-            return Ok(taskDto);
-        }
+        //[HttpGet("user/{userId:int}")]
+        //public async Task<IActionResult> GetAllTasksByUserId([FromRoute] int userId,[FromQuery] QueryObject query)
+        //{
+        //    var tasks = await _taskRepo.GetAllByUserIdAsync(query, userId);
+        //    var taskDto = tasks.Select(s => s.ToTaskDto());
+        //    return Ok(taskDto);
+        //}
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetTask([FromRoute] int id, [FromQuery] QueryObject query)
+        public async Task<IActionResult> GetTask([FromRoute] int id)
         {
-            var task = await _taskRepo.GetByIdAsync(id, query);
+            var task = await _taskRepo.GetByIdAsync(id);
             if (task == null)
             {
                 return NotFound("Task not found");
@@ -49,14 +49,10 @@ namespace TaskManagementApp.Controllers
             return Ok(task.ToTaskDto());
         }
 
-        [HttpPost("create/{userId:int}")]
-        public async Task<IActionResult> CreateTask([FromRoute] int userId, CreateTaskDto taskDto)
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateTask( CreateTaskDto taskDto)
         {
-            if(!await _userRepo.UserExists(userId))
-            {
-                return BadRequest("User does not exist");
-            }
-            var taskModel = taskDto.ToTaskFromCreate(userId);
+            var taskModel = taskDto.ToTaskFromCreate();
             await _taskRepo.CreateAsync(taskModel);
             return CreatedAtAction(nameof(GetTask), new { id = taskModel.Id }, taskModel.ToTaskDto());
         }

@@ -5,7 +5,7 @@ namespace TaskManagementApp.Dtos.User
     public class RegisterDto
     {
         [Required]
-        public string? Name { get; set; }
+        public string? Username { get; set; }
         [Required]
         [EmailAddress]
         public string? Email { get; set; }

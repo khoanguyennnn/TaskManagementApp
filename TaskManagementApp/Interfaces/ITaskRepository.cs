@@ -7,8 +7,8 @@ namespace TaskManagementApp.Interfaces
     public interface ITaskRepository
     {
         Task<List<TaskModel>> GetAllAsync(QueryObject query);
-        Task<List<TaskModel>> GetAllByUserIdAsync(QueryObject query, int userId);
-        Task<TaskModel?> GetByIdAsync(int id, QueryObject query);
+        //Task<List<TaskModel>> GetAllByUserIdAsync(QueryObject query, int userId);
+        Task<TaskModel?> GetByIdAsync(int id);
         Task<TaskModel> CreateAsync(TaskModel taskModel);
         Task<TaskModel?> UpdateAsync(int id, TaskModel taskModel);
         Task<TaskModel?> DeleteAsync(int id);

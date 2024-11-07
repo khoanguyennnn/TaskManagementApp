@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
 using TaskManagementApp.Data;
+using TaskManagementApp.Dtos.User;
 using TaskManagementApp.Interfaces;
 using TaskManagementApp.Mappers;
+using TaskManagementApp.Models;
 
 namespace TaskManagementApp.Controllers
 {
@@ -11,30 +15,58 @@ namespace TaskManagementApp.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserRepository _userRepo;
-        public UserController(IUserRepository userRepo)
+        private readonly UserManager<User> _userManager;
+        private readonly ITokenService _tokenService;
+        public UserController(UserManager<User> userManager, ITokenService tokenService)
         {
-            _userRepo = userRepo;
+            _userManager = userManager;
+            _tokenService = tokenService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllUser()
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            var users = await _userRepo.GetAllAsync();
-                
-            var userDto = users.Select(s => s.ToUserDto());
-            return Ok(userDto);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser([FromRoute] int id)
-        {
-            var user = await _userRepo.GetByIdAsync(id);
-            if (user == null)
+            try
             {
-                return NotFound("User not found");
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var user = new User
+                {
+                    UserName = registerDto.Username,
+                    Email = registerDto.Email,
+                };
+
+                var createUser = await _userManager.CreateAsync(user, registerDto.Password);
+
+                if (createUser.Succeeded)
+                {
+                    var roleResult = await _userManager.AddToRoleAsync(user, "User");
+                    if(roleResult.Succeeded)
+                    {
+                        return Ok(
+                            new NewUserDto
+                            {
+                                UserName = user.UserName,
+                                Email = user.Email,
+                                Token = _tokenService.CreateToken(user)
+                            }
+                        );
+                    }
+                    else
+                    {
+                        return StatusCode(500, roleResult.Errors);
+                    }
+                } else
+                {
+                    return StatusCode(500, createUser.Errors);
+                }
+            } catch (Exception e)
+            {
+                return StatusCode(500, e);
             }
-            return Ok(user.ToUserDto());
         }
     }
 }

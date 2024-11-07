@@ -15,17 +15,17 @@ namespace TaskManagementApp.Mappers
                 UpdatedDate = taskModel.UpdatedDate,
                 EndDate = taskModel.EndDate,
                 IsCompleted = taskModel.IsCompleted,
-                UserId = taskModel.UserId
+                //UserId = taskModel.UserId
             };
         }
 
-        public static Models.Task ToTaskFromCreate(this CreateTaskDto taskDto, int userId)
+        public static Models.Task ToTaskFromCreate(this CreateTaskDto taskDto)
         {
             return new Models.Task
             {
                 Name = taskDto.Name,
                 Description = taskDto.Description,
-                UserId = userId
+                //UserId = userId
             };
         }
 
