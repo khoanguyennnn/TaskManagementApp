@@ -1,4 +1,5 @@
 ﻿using TaskManagementApp.Dtos.Task;
+using TaskManagementApp.Models;
 
 namespace TaskManagementApp.Mappers
 {
@@ -15,17 +16,18 @@ namespace TaskManagementApp.Mappers
                 UpdatedDate = taskModel.UpdatedDate,
                 EndDate = taskModel.EndDate,
                 IsCompleted = taskModel.IsCompleted,
-                //UserId = taskModel.UserId
+                UserId = taskModel.UserId,
             };
         }
 
-        public static Models.Task ToTaskFromCreate(this CreateTaskDto taskDto)
+        public static Models.Task ToTaskFromCreate(this CreateTaskDto taskDto, User user)
         {
             return new Models.Task
             {
                 Name = taskDto.Name,
                 Description = taskDto.Description,
-                //UserId = userId
+                EndDate = taskDto.EndDate,
+                UserId = user.Id
             };
         }
 
@@ -34,7 +36,16 @@ namespace TaskManagementApp.Mappers
             return new Models.Task
             {
                 Name = taskDto.Name,
-                Description = taskDto.Description
+                Description = taskDto.Description,
+                EndDate = taskDto.EndDate,
+            };
+        }
+
+        public static Models.Task ToTaskFromUpdateStatus(this UpdateTaskStatusDto taskDto)
+        {
+            return new Models.Task
+            {
+                IsCompleted = taskDto.IsCompleted
             };
         }
     }

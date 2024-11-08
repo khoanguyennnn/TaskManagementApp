@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskManagementApp.Data;
 using TaskManagementApp.Dtos.Task;
+using TaskManagementApp.Extensions;
 using TaskManagementApp.Helpers;
 using TaskManagementApp.Interfaces;
 using TaskManagementApp.Mappers;
+using TaskManagementApp.Models;
 using TaskModel = TaskManagementApp.Models.Task;
 
 namespace TaskManagementApp.Controllers
@@ -15,17 +19,20 @@ namespace TaskManagementApp.Controllers
     public class TaskController : ControllerBase
     {
         private readonly ITaskRepository _taskRepo;
-        //private readonly IUserRepository _userRepo;
-        public TaskController(ITaskRepository taskRepo)
+        private readonly UserManager<User> _userManager;
+        public TaskController(ITaskRepository taskRepo, UserManager<User> userManager)
         {
             _taskRepo = taskRepo;
-            //_userRepo = userRepo;
+            _userManager = userManager;
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAllTasks([FromQuery] QueryObject query)
         {
-            var tasks = await _taskRepo.GetAllAsync(query);
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            var tasks = await _taskRepo.GetAllAsync(query, user);
             var taskDto = tasks.Select(s => s.ToTaskDto());
             return Ok(taskDto);
         }
@@ -39,9 +46,12 @@ namespace TaskManagementApp.Controllers
         //}
 
         [HttpGet("{id:int}")]
+        [Authorize]
         public async Task<IActionResult> GetTask([FromRoute] int id)
         {
-            var task = await _taskRepo.GetByIdAsync(id);
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            var task = await _taskRepo.GetByIdAsync(id, user);
             if (task == null)
             {
                 return NotFound("Task not found");
@@ -50,15 +60,19 @@ namespace TaskManagementApp.Controllers
         }
 
         [HttpPost("create")]
+        [Authorize]
         public async Task<IActionResult> CreateTask( CreateTaskDto taskDto)
         {
-            var taskModel = taskDto.ToTaskFromCreate();
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            var taskModel = taskDto.ToTaskFromCreate(user);
             await _taskRepo.CreateAsync(taskModel);
             return CreatedAtAction(nameof(GetTask), new { id = taskModel.Id }, taskModel.ToTaskDto());
         }
 
         [HttpPut]
         [Route("update/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> UpdateTask([FromRoute] int id, [FromBody] UpdateTaskRequestDto updateDto)
         {
             var tasks = await _taskRepo.UpdateAsync(id, updateDto.ToTaskFromUpdate());
@@ -71,8 +85,24 @@ namespace TaskManagementApp.Controllers
             return Ok(tasks.ToTaskDto());
         }
 
+        [HttpPost]
+        [Route("finish/{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> FinishTask([FromRoute] int id)
+        {
+            var task = await _taskRepo.UpdateStatusAsync(id);
+
+            if (task == null)
+            {
+                return NotFound("Task not found");
+            }
+
+            return Ok(task.ToTaskDto());
+        }
+
         [HttpDelete]
         [Route("delete/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> DeleteTask([FromRoute] int id)
         {
             var taskModel = await _taskRepo.DeleteAsync(id);
